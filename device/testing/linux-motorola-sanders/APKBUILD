@@ -11,13 +11,18 @@ _flavor="motorola-sanders"
 url="https://lineageos.org/"
 license="GPL-2.0-only"
 options="!strip !check !tracedeps pmb:cross-native"
+
+# bash: some kernel files require a shell
+# devicepkg-dev: to build a pmos pkg
+# dtbtool: to create the qcdt image
+# openssl-dev: to extract certs from the kernel
+# perl: to parse assembly (.S) files
 makedepends="
 	bash
-	bc
-	bison
 	devicepkg-dev
 	dtbtool
-	flex
+	openssl-dev
+	perl
 "
 
 # Source
@@ -38,22 +43,22 @@ prepare() {
 
 build() {
 	unset LDFLAGS
-	make O="$_outdir" ARCH="$_carch" CC="${CC:-gcc}" \
-		KBUILD_BUILD_VERSION="$((pkgrel + 1 ))-postmarketOS"
+	make O="$_outdir" ARCH="$_carch" CC="${CC:-gcc}" KBUILD_BUILD_VERSION="$((pkgrel + 1 ))-postmarketOS"
 
-	# Master DTB (deviceinfo_bootimg_qcdt)
-	dtbTool -o "$_outdir/arch/$_carch/boot"/dt.img \
-		"$_outdir/arch/$_carch/boot/"
+	# Compile all .dtb files into dt.img for QCDT image
+	dtbTool -o "$_outdir/arch/$_carch/boot"/dt.img "$_outdir/arch/$_carch/boot/"
 }
 
 package() {
-	downstreamkernel_package "$builddir" "$pkgdir" "$_carch" \
-		"$_flavor" "$_outdir"
-	install -Dm644 "$_outdir/arch/$_carch/boot"/dt.img \
-		"$pkgdir"/boot/dt.img
+	# Need to figure out why the Image.gz isn't detected, but for now set it manually (30.1MB -> 13.3MB)
+	KERNEL_IMAGE_NAME="Image.gz" \
+	downstreamkernel_package "$builddir" "$pkgdir" "$_carch" "$_flavor" "$_outdir"
+
+	# Place dt.img in boot partition where QCDT can find it
+	install -Dm644 "$_outdir/arch/$_carch/boot"/dt.img "$pkgdir"/boot/dt.img
 }
 
 sha512sums="
 5c069d193ca75340f36f66672dcadd168eddec7b96ad834c736edb9a7ccdaff19364376e326681c27449447dcf5493a204442a89d07d4745cfc1fde6d94289de  linux-motorola-sanders-lineage-18.1.tar.gz
-130545a2ba3c26bb7de23aa36b9771a6a5f9306a86b154049604a1a947009d5f81b42e329a63bc2a313c2d601b9d42c3725c5744d8742b45ddfec82d6afb7081  config-motorola-sanders.aarch64
+e86b1bca01ce6089dafd223c00b56f22f4cc9de8bdc87eeab0701bfc552368ba9588f291bc7789baaac05d58fdda46174205a67b2687b35380178944e9424986  config-motorola-sanders.aarch64
 "

@@ -1,0 +1,30 @@
+# Reference: <https://postmarketos.org/devicepkg>
+pkgname=device-motorola-sanders
+pkgdesc="Motorola Moto G5s Plus"
+pkgver=0.1
+pkgrel=0
+url="https://postmarketos.org"
+license="MIT"
+arch="aarch64"
+options="!check !archcheck"
+depends="
+	linux-motorola-sanders
+	mesa-dri-gallium
+	mkbootimg
+	msm-firmware-loader
+	postmarketos-base
+"
+makedepends="devicepkg-dev"
+source="deviceinfo"
+
+build() {
+	devicepkg_build $startdir $pkgname
+}
+
+package() {
+	devicepkg_package $startdir $pkgname
+}
+
+sha512sums="
+11491eeb495adccbca645b54742d8c1e37f51463838f2b7d3e5b9e01ac1737faad34282aa7352d132b6623e1337d15e8dbb2a4abcfb694a7f30ff8e324f531e0  deviceinfo
+"

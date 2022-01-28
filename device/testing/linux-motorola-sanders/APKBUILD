@@ -1,0 +1,59 @@
+# Reference: <https://postmarketos.org/vendorkernel>
+# Kernel config based on: arch/arm64/configs/(CHANGEME!)
+
+pkgname=linux-motorola-sanders
+pkgver=3.18.140
+pkgrel=0
+pkgdesc="Motorola Moto G5s Plus kernel fork"
+arch="aarch64"
+_carch="arm64"
+_flavor="motorola-sanders"
+url="https://lineageos.org/"
+license="GPL-2.0-only"
+options="!strip !check !tracedeps pmb:cross-native"
+makedepends="
+	bash
+	bc
+	bison
+	devicepkg-dev
+	dtbtool
+	flex
+"
+
+# Source
+_repository="android_kernel_motorola_msm8953"
+_commit="lineage-18.1"
+_config="config-$_flavor.$arch"
+source="
+	$pkgname-$_commit.tar.gz::https://github.com/LineageOS/$_repository/archive/$_commit.tar.gz
+	$_config
+"
+builddir="$srcdir/$_repository-$_commit"
+_outdir="out"
+
+prepare() {
+	default_prepare
+	. downstreamkernel_prepare
+}
+
+build() {
+	unset LDFLAGS
+	make O="$_outdir" ARCH="$_carch" CC="${CC:-gcc}" \
+		KBUILD_BUILD_VERSION="$((pkgrel + 1 ))-postmarketOS"
+
+	# Master DTB (deviceinfo_bootimg_qcdt)
+	dtbTool -o "$_outdir/arch/$_carch/boot"/dt.img \
+		"$_outdir/arch/$_carch/boot/"
+}
+
+package() {
+	downstreamkernel_package "$builddir" "$pkgdir" "$_carch" \
+		"$_flavor" "$_outdir"
+	install -Dm644 "$_outdir/arch/$_carch/boot"/dt.img \
+		"$pkgdir"/boot/dt.img
+}
+
+sha512sums="
+5c069d193ca75340f36f66672dcadd168eddec7b96ad834c736edb9a7ccdaff19364376e326681c27449447dcf5493a204442a89d07d4745cfc1fde6d94289de  linux-motorola-sanders-lineage-18.1.tar.gz
+130545a2ba3c26bb7de23aa36b9771a6a5f9306a86b154049604a1a947009d5f81b42e329a63bc2a313c2d601b9d42c3725c5744d8742b45ddfec82d6afb7081  config-motorola-sanders.aarch64
+"

@@ -8,30 +8,31 @@ pkgdesc="Motorola Moto G5s Plus kernel fork"
 arch="aarch64"
 _carch="arm64"
 _flavor="motorola-sanders"
-url="https://lineageos.org/"
+url="https://kernel.org/"
 license="GPL-2.0-only"
 options="!strip !check !tracedeps pmb:cross-native"
 
 # bash: some kernel files require a shell
 # devicepkg-dev: to build a pmos pkg
-# dtbtool: to create the qcdt image
-# openssl-dev: to extract certs from the kernel
+# dtbtool: to create the dt.img for QCDT
 # perl: to parse assembly (.S) files
 makedepends="
 	bash
 	devicepkg-dev
 	dtbtool
-	openssl-dev
 	perl
 "
 
-# Source
-_repository="android_kernel_motorola_msm8953"
-_commit="lineage-18.1"
+# Source - LineageOS kernel doesn't boot, not worth finding out why on a
+# downstream kernel, so use PixelExperience kernel for now. The goal is to
+# mainline!
+_repository="kernel_motorola_msm8953"
+_commit="eleven"
 _config="config-$_flavor.$arch"
 source="
-	$pkgname-$_commit.tar.gz::https://github.com/LineageOS/$_repository/archive/$_commit.tar.gz
+	$pkgname-$_commit.tar.gz::https://github.com/PixelExperience-Devices/$_repository/archive/$_commit.tar.gz
 	$_config
+	gcc10-extern_YYLOC_global_declaration.patch
 "
 builddir="$srcdir/$_repository-$_commit"
 _outdir="out"
@@ -50,7 +51,7 @@ build() {
 }
 
 package() {
-	# Need to figure out why the Image.gz isn't detected, but for now set it manually (30.1MB -> 13.3MB)
+	# Need to figure out why the Image.gz isn't detected, but for now set it manually
 	KERNEL_IMAGE_NAME="Image.gz" \
 	downstreamkernel_package "$builddir" "$pkgdir" "$_carch" "$_flavor" "$_outdir"
 
@@ -59,6 +60,7 @@ package() {
 }
 
 sha512sums="
-5c069d193ca75340f36f66672dcadd168eddec7b96ad834c736edb9a7ccdaff19364376e326681c27449447dcf5493a204442a89d07d4745cfc1fde6d94289de  linux-motorola-sanders-lineage-18.1.tar.gz
-e86b1bca01ce6089dafd223c00b56f22f4cc9de8bdc87eeab0701bfc552368ba9588f291bc7789baaac05d58fdda46174205a67b2687b35380178944e9424986  config-motorola-sanders.aarch64
+b861df303c266dfa817b0d1b2a62635945a204323a82a035fcd049a1278a25c13606e9b6728de522a20fe9a806c5dd86218180a4a1c3595ec26d2f6673634171  linux-motorola-sanders-eleven.tar.gz
+4c405744bee944815451958e1c9634ea17eeeba3b30470dda16cfcdea64cfb38ea330635cdb0ba5b2c0e18979f24b177d90897666209d10dc7491e916df4ea5a  config-motorola-sanders.aarch64
+2b48f1bf0e3f70703d2cdafc47d5e615cc7c56c70bec56b2e3297d3fa4a7a1321d649a8679614553dde8fe52ff1051dae38d5990e3744c9ca986d92187dcdbeb  gcc10-extern_YYLOC_global_declaration.patch
 "

@@ -1,0 +1,807 @@
+diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+index cbb4d1ab5672..5277b44795f9 100644
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -654,6 +654,7 @@ void clear_buffer_attributes(struct vc_data *vc)
+ void redraw_screen(struct vc_data *vc, int is_switch)
+ {
+ 	int redraw = 0;
++	pr_err("!!!!!!! redraw_screen begin !!!!!!!\n");
+ 
+ 	WARN_CONSOLE_UNLOCKED();
+ 
+@@ -662,6 +663,7 @@ void redraw_screen(struct vc_data *vc, int is_switch)
+ 		/* printk("redraw_screen: tty %d not allocated ??\n", new_console+1); */
+ 		return;
+ 	}
++	pr_err("!!!!!!! redraw_screen step1 !!!!!!!\n");
+ 
+ 	if (is_switch) {
+ 		struct vc_data *old_vc = vc_cons[fg_console].d;
+@@ -680,6 +682,7 @@ void redraw_screen(struct vc_data *vc, int is_switch)
+ 			sysfs_notify(&tty0dev->kobj, NULL, "active");
+ 	} else {
+ 		hide_cursor(vc);
++		pr_err("!!!!!!! redraw_screen step2 !!!!!!!\n");
+ 		redraw = 1;
+ 	}
+ 
+@@ -688,8 +691,11 @@ void redraw_screen(struct vc_data *vc, int is_switch)
+ 		int old_was_color = vc->vc_can_do_color;
+ 
+ 		set_origin(vc);
++		pr_err("!!!!!!! redraw_screen step3 !!!!!!!\n");
+ 		update = vc->vc_sw->con_switch(vc);
++		pr_err("!!!!!!! redraw_screen step4 !!!!!!!\n");
+ 		set_palette(vc);
++		pr_err("!!!!!!! redraw_screen step5 !!!!!!!\n");
+ 		/*
+ 		 * If console changed from mono<->color, the best we can do
+ 		 * is to clear the buffer attributes. As it currently stands,
+@@ -700,18 +706,22 @@ void redraw_screen(struct vc_data *vc, int is_switch)
+ 			update_attr(vc);
+ 			clear_buffer_attributes(vc);
+ 		}
++		pr_err("!!!!!!! redraw_screen step6 !!!!!!!\n");
+ 
+ 		/* Forcibly update if we're panicing */
+ 		if ((update && vc->vc_mode != KD_GRAPHICS) ||
+ 		    vt_force_oops_output(vc))
+ 			do_update_region(vc, vc->vc_origin, vc->vc_screenbuf_size / 2);
+ 	}
++	pr_err("!!!!!!! redraw_screen step7 !!!!!!!\n");
+ 	set_cursor(vc);
++	pr_err("!!!!!!! redraw_screen step8 !!!!!!!\n");
+ 	if (is_switch) {
+ 		set_leds();
+ 		compute_shiftstate();
+ 		notify_update(vc);
+ 	}
++	pr_err("!!!!!!! redraw_screen end !!!!!!!\n");
+ }
+ 
+ /*
+@@ -3094,6 +3104,7 @@ static int do_bind_con_driver(const struct consw *csw, int first, int last,
+ 	const char *desc = NULL;
+ 	struct con_driver *con_driver;
+ 	int i, j = -1, k = -1, retval = -ENODEV;
++	pr_err("!!!!!!! do_bind_con_driver begin !!!!!!!\n");
+ 
+ 	if (!try_module_get(owner))
+ 		return -ENODEV;
+@@ -3115,6 +3126,7 @@ static int do_bind_con_driver(const struct consw *csw, int first, int last,
+ 		goto err;
+ 
+ 	if (!(con_driver->flag & CON_DRIVER_FLAG_INIT)) {
++		pr_err("!!!!!!! do_bind_con_driver call con_startup !!!!!!!\n");
+ 		csw->con_startup();
+ 		con_driver->flag |= CON_DRIVER_FLAG_INIT;
+ 	}
+@@ -3176,6 +3188,7 @@ static int do_bind_con_driver(const struct consw *csw, int first, int last,
+ 
+ 		if (k >= 0) {
+ 			vc = vc_cons[k].d;
++			pr_err("!!!!!!! do_bind_con_driver call update_screen !!!!!!!\n");
+ 			update_screen(vc);
+ 		}
+ 	} else
+@@ -3184,6 +3197,7 @@ static int do_bind_con_driver(const struct consw *csw, int first, int last,
+ 	retval = 0;
+ err:
+ 	module_put(owner);
++	pr_err("!!!!!!! do_bind_con_driver end !!!!!!!\n");
+ 	return retval;
+ };
+ 
+@@ -3583,6 +3597,7 @@ static int do_register_con_driver(const struct consw *csw, int first, int last)
+ 	struct con_driver *con_driver;
+ 	const char *desc;
+ 	int i, retval = 0;
++	pr_err("!!!!!!! do_register_con_driver begin !!!!!!!\n");
+ 
+ 	WARN_CONSOLE_UNLOCKED();
+ 
+@@ -3638,11 +3653,13 @@ static int do_register_con_driver(const struct consw *csw, int first, int last)
+ 		       PTR_ERR(con_driver->dev));
+ 		con_driver->dev = NULL;
+ 	} else {
++		pr_err("!!!!!!! do_register_con_driver call vtconsole_init_device !!!!!!!\n");
+ 		vtconsole_init_device(con_driver);
+ 	}
+ 
+ err:
+ 	module_put(owner);
++	pr_err("!!!!!!! do_register_con_driver end !!!!!!!\n");
+ 	return retval;
+ }
+ 
+@@ -3702,8 +3719,10 @@ EXPORT_SYMBOL_GPL(do_unregister_con_driver);
+ int do_take_over_console(const struct consw *csw, int first, int last, int deflt)
+ {
+ 	int err;
++	pr_err("!!!!!!! do_take_over_console begin !!!!!!!\n");
+ 
+ 	err = do_register_con_driver(csw, first, last);
++	pr_err("!!!!!!! do_take_over_console step1 !!!!!!!\n");
+ 	/*
+ 	 * If we get an busy error we still want to bind the console driver
+ 	 * and return success, as we may have unbound the console driver
+@@ -3711,9 +3730,12 @@ int do_take_over_console(const struct consw *csw, int first, int last, int deflt
+ 	 */
+ 	if (err == -EBUSY)
+ 		err = 0;
+-	if (!err)
++	if (!err) {
++		pr_err("!!!!!!! do_take_over_console call do_bind_con_driver !!!!!!!\n");
+ 		do_bind_con_driver(csw, first, last, deflt);
++	}
+ 
++	pr_err("!!!!!!! do_take_over_console end, err is %d !!!!!!!\n", err);
+ 	return err;
+ }
+ EXPORT_SYMBOL_GPL(do_take_over_console);
+diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
+index 614d3209d465..0ac6e773d581 100644
+--- a/drivers/video/console/fbcon.c
++++ b/drivers/video/console/fbcon.c
+@@ -531,6 +531,7 @@ static int search_for_mapped_con(void)
+ static int do_fbcon_takeover(int show_logo)
+ {
+ 	int err, i;
++	pr_err("!!!!!!! do_fbcon_takeover begin !!!!!!!\n");
+ 
+ 	if (!num_registered_fb)
+ 		return -ENODEV;
+@@ -541,6 +542,7 @@ static int do_fbcon_takeover(int show_logo)
+ 	for (i = first_fb_vc; i <= last_fb_vc; i++)
+ 		con2fb_map[i] = info_idx;
+ 
++	pr_err("!!!!!!! do_fbcon_takeover call do_take_over_console !!!!!!!\n");
+ 	err = do_take_over_console(&fb_con, first_fb_vc, last_fb_vc,
+ 				fbcon_is_default);
+ 
+@@ -901,6 +903,11 @@ static int var_to_display(struct display *disp,
+ static void display_to_var(struct fb_var_screeninfo *var,
+ 			   struct display *disp)
+ {
++	pr_err("!!!!!!! display_to_var begin !!!!!!!\n");
++	if (!var)
++		pr_err("!!!!!!! display_to_var var is NULL !!!!!!!\n");
++	if (!disp->mode)
++		pr_err("!!!!!!! display_to_var disp->mode is NULL !!!!!!!\n");
+ 	fb_videomode_to_var(var, disp->mode);
+ 	var->xres_virtual = disp->xres_virtual;
+ 	var->yres_virtual = disp->yres_virtual;
+@@ -915,6 +922,7 @@ static void display_to_var(struct fb_var_screeninfo *var,
+ 	var->blue = disp->blue;
+ 	var->transp = disp->transp;
+ 	var->rotate = disp->rotate;
++	pr_err("!!!!!!! display_to_var end !!!!!!!\n");
+ }
+ 
+ static const char *fbcon_startup(void)
+@@ -927,6 +935,7 @@ static const char *fbcon_startup(void)
+ 	struct fb_info *info = NULL;
+ 	struct fbcon_ops *ops;
+ 	int rows, cols;
++	pr_err("!!!!!!! fbcon_startup begin !!!!!!!\n");
+ 
+ 	/*
+ 	 *  If num_registered_fb is zero, this is a call for the dummy part.
+@@ -945,6 +954,7 @@ static const char *fbcon_startup(void)
+ 	owner = info->fbops->owner;
+ 	if (!try_module_get(owner))
+ 		return NULL;
++	pr_err("!!!!!!! fbcon_startup call fb_open !!!!!!!\n");
+ 	if (info->fbops->fb_open && info->fbops->fb_open(info, 0)) {
+ 		module_put(owner);
+ 		return NULL;
+@@ -1017,6 +1027,7 @@ static const char *fbcon_startup(void)
+ 
+ 	fbcon_add_cursor_timer(info);
+ 	fbcon_has_exited = 0;
++	pr_err("!!!!!!! fbcon_startup end !!!!!!!\n");
+ 	return display_desc;
+ }
+ 
+@@ -2164,10 +2175,12 @@ static int fbcon_switch(struct vc_data *vc)
+ 	struct display *p = &fb_display[vc->vc_num];
+ 	struct fb_var_screeninfo var;
+ 	int i, ret, prev_console, charcnt = 256;
++	pr_err("!!!!!!! fbcon_switch begin !!!!!!!\n");
+ 
+ 	info = registered_fb[con2fb_map[vc->vc_num]];
+ 	ops = info->fbcon_par;
+ 
++	pr_err("!!!!!!! fbcon_switch step1 !!!!!!!\n");
+ 	if (softback_top) {
+ 		if (softback_lines)
+ 			fbcon_set_origin(vc);
+@@ -2176,6 +2189,7 @@ static int fbcon_switch(struct vc_data *vc)
+ 		fbcon_update_softback(vc);
+ 	}
+ 
++	pr_err("!!!!!!! fbcon_switch step2 !!!!!!!\n");
+ 	if (logo_shown >= 0) {
+ 		struct vc_data *conp2 = vc_cons[logo_shown].d;
+ 
+@@ -2185,6 +2199,7 @@ static int fbcon_switch(struct vc_data *vc)
+ 		logo_shown = FBCON_LOGO_CANSHOW;
+ 	}
+ 
++	pr_err("!!!!!!! fbcon_switch step3 !!!!!!!\n");
+ 	prev_console = ops->currcon;
+ 	if (prev_console != -1)
+ 		old_info = registered_fb[con2fb_map[prev_console]];
+@@ -2203,10 +2218,18 @@ static int fbcon_switch(struct vc_data *vc)
+ 			o->currcon = vc->vc_num;
+ 		}
+ 	}
++	pr_err("!!!!!!! fbcon_switch step4 !!!!!!!\n");
++	// HACK: Fill in current fb mode when switching to fbcon
++	if (var_to_display(p, &info->var, info))
++	{
++		pr_err("!!!!!!! fbcon_switch failed to fill in display mode !!!!!!!\n");
++		return 1;
++	}
+ 	memset(&var, 0, sizeof(struct fb_var_screeninfo));
+ 	display_to_var(&var, p);
+ 	var.activate = FB_ACTIVATE_NOW;
+ 
++	pr_err("!!!!!!! fbcon_switch step5 !!!!!!!\n");
+ 	/*
+ 	 * make sure we don't unnecessarily trip the memcmp()
+ 	 * in fb_set_var()
+@@ -2215,10 +2238,12 @@ static int fbcon_switch(struct vc_data *vc)
+ 	var.vmode |= info->var.vmode & ~FB_VMODE_MASK;
+ 	fb_set_var(info, &var);
+ 	ops->var = info->var;
++	pr_err("!!!!!!! fbcon_switch step6 !!!!!!!\n");
+ 
+ 	if (old_info != NULL && (old_info != info ||
+ 				 info->flags & FBINFO_MISC_ALWAYS_SETPAR)) {
+ 		if (info->fbops->fb_set_par) {
++			pr_err("!!!!!!! fbcon_switch step7 !!!!!!!\n");
+ 			ret = info->fbops->fb_set_par(info);
+ 
+ 			if (ret)
+@@ -2227,33 +2252,40 @@ static int fbcon_switch(struct vc_data *vc)
+ 					"error code %d\n", ret);
+ 		}
+ 
++		pr_err("!!!!!!! fbcon_switch step8 !!!!!!!\n");
+ 		if (old_info != info)
+ 			fbcon_del_cursor_timer(old_info);
+ 	}
+ 
++	pr_err("!!!!!!! fbcon_switch step9 !!!!!!!\n");
+ 	if (fbcon_is_inactive(vc, info) ||
+ 	    ops->blank_state != FB_BLANK_UNBLANK)
+ 		fbcon_del_cursor_timer(info);
+ 	else
+ 		fbcon_add_cursor_timer(info);
+ 
++	pr_err("!!!!!!! fbcon_switch step10 !!!!!!!\n");
+ 	set_blitting_type(vc, info);
+ 	ops->cursor_reset = 1;
+ 
++	pr_err("!!!!!!! fbcon_switch step11 !!!!!!!\n");
+ 	if (ops->rotate_font && ops->rotate_font(info, vc)) {
+ 		ops->rotate = FB_ROTATE_UR;
+ 		set_blitting_type(vc, info);
+ 	}
+ 
++	pr_err("!!!!!!! fbcon_switch step12 !!!!!!!\n");
+ 	vc->vc_can_do_color = (fb_get_color_depth(&info->var, &info->fix)!=1);
+ 	vc->vc_complement_mask = vc->vc_can_do_color ? 0x7700 : 0x0800;
+ 
++	pr_err("!!!!!!! fbcon_switch step13 !!!!!!!\n");
+ 	if (p->userfont)
+ 		charcnt = FNTCHARCNT(vc->vc_font.data);
+ 
+ 	if (charcnt > 256)
+ 		vc->vc_complement_mask <<= 1;
+ 
++	pr_err("!!!!!!! fbcon_switch step14 !!!!!!!\n");
+ 	updatescrollmode(p, info, vc);
+ 
+ 	switch (p->scrollmode) {
+@@ -2274,25 +2306,31 @@ static int fbcon_switch(struct vc_data *vc)
+ 	scrollback_max = 0;
+ 	scrollback_current = 0;
+ 
++	pr_err("!!!!!!! fbcon_switch step15 !!!!!!!\n");
+ 	if (!fbcon_is_inactive(vc, info)) {
+ 	    ops->var.xoffset = ops->var.yoffset = p->yscroll = 0;
+ 	    ops->update_start(info);
+ 	}
+ 
+-	fbcon_set_palette(vc, color_table); 	
++	pr_err("!!!!!!! fbcon_switch step16 !!!!!!!\n");
++	fbcon_set_palette(vc, color_table); 
++	pr_err("!!!!!!! fbcon_switch step17 !!!!!!!\n");	
+ 	fbcon_clear_margins(vc, 0);
+ 
++	pr_err("!!!!!!! fbcon_switch step18 !!!!!!!\n");
+ 	if (logo_shown == FBCON_LOGO_DRAW) {
+ 
+ 		logo_shown = fg_console;
+ 		/* This is protected above by initmem_freed */
+ 		fb_show_logo(info, ops->rotate);
++		pr_err("!!!!!!! fbcon_switch step19 !!!!!!!\n");
+ 		update_region(vc,
+ 			      vc->vc_origin + vc->vc_size_row * vc->vc_top,
+ 			      vc->vc_size_row * (vc->vc_bottom -
+ 						 vc->vc_top) / 2);
+ 		return 0;
+ 	}
++	pr_err("!!!!!!! fbcon_switch end !!!!!!!\n");
+ 	return 1;
+ }
+ 
+@@ -3144,6 +3182,7 @@ static inline void fbcon_select_primary(struct fb_info *info)
+ static int fbcon_fb_registered(struct fb_info *info)
+ {
+ 	int ret = 0, i, idx;
++	pr_err("!!!!!!! fbcon_fb_registered begin !!!!!!!\n");
+ 
+ 	idx = info->node;
+ 	fbcon_select_primary(info);
+@@ -3156,8 +3195,11 @@ static int fbcon_fb_registered(struct fb_info *info)
+ 			}
+ 		}
+ 
+-		if (info_idx != -1)
++		if (info_idx != -1) {
++			pr_err("!!!!!!! fbcon_fb_registered call do_fbcon_takeover !!!!!!!\n");
+ 			ret = do_fbcon_takeover(1);
++		}
++
+ 	} else {
+ 		for (i = first_fb_vc; i <= last_fb_vc; i++) {
+ 			if (con2fb_map_boot[i] == idx)
+diff --git a/drivers/video/fbdev/core/fbmem.c b/drivers/video/fbdev/core/fbmem.c
+index 4bb5d68189a0..a22b59c616f9 100644
+--- a/drivers/video/fbdev/core/fbmem.c
++++ b/drivers/video/fbdev/core/fbmem.c
+@@ -1630,6 +1630,7 @@ static int do_register_framebuffer(struct fb_info *fb_info)
+ 	int i, ret;
+ 	struct fb_event event;
+ 	struct fb_videomode mode;
++	pr_err("!!!!!!! do_register_framebuffer begin !!!!!!!\n");
+ 
+ 	if (fb_check_foreignness(fb_info))
+ 		return -ENOSYS;
+@@ -1640,6 +1641,7 @@ static int do_register_framebuffer(struct fb_info *fb_info)
+ 	if (ret)
+ 		return ret;
+ 
++	pr_err("!!!!!!! do_register_framebuffer step1 !!!!!!!\n");
+ 	if (num_registered_fb == FB_MAX)
+ 		return -ENXIO;
+ 
+@@ -1661,6 +1663,7 @@ static int do_register_framebuffer(struct fb_info *fb_info)
+ 	} else
+ 		fb_init_device(fb_info);
+ 
++	pr_err("!!!!!!! do_register_framebuffer step2 !!!!!!!\n");
+ 	if (fb_info->pixmap.addr == NULL) {
+ 		fb_info->pixmap.addr = kmalloc(FBPIXMAPSIZE, GFP_KERNEL);
+ 		if (fb_info->pixmap.addr) {
+@@ -1682,15 +1685,19 @@ static int do_register_framebuffer(struct fb_info *fb_info)
+ 	if (!fb_info->modelist.prev || !fb_info->modelist.next)
+ 		INIT_LIST_HEAD(&fb_info->modelist);
+ 
++	pr_err("!!!!!!! do_register_framebuffer step3 !!!!!!!\n");
+ 	if (fb_info->skip_vt_switch)
+ 		pm_vt_switch_required(fb_info->dev, false);
+ 	else
+ 		pm_vt_switch_required(fb_info->dev, true);
+ 
++	pr_err("!!!!!!! do_register_framebuffer step4 !!!!!!!\n");
+ 	fb_var_to_videomode(&mode, &fb_info->var);
++	pr_err("!!!!!!! do_register_framebuffer step5 !!!!!!!\n");
+ 	fb_add_videomode(&mode, &fb_info->modelist);
+ 	registered_fb[i] = fb_info;
+ 
++	pr_err("!!!!!!! do_register_framebuffer step6 !!!!!!!\n");
+ 	event.info = fb_info;
+ 	console_lock();
+ 	if (!lock_fb_info(fb_info)) {
+@@ -1698,9 +1705,11 @@ static int do_register_framebuffer(struct fb_info *fb_info)
+ 		return -ENODEV;
+ 	}
+ 
++	pr_err("!!!!!!! do_register_framebuffer step7 !!!!!!!\n");
+ 	fb_notifier_call_chain(FB_EVENT_FB_REGISTERED, &event);
+ 	unlock_fb_info(fb_info);
+ 	console_unlock();
++	pr_err("!!!!!!! do_register_framebuffer end !!!!!!!\n");
+ 	return 0;
+ }
+ 
+diff --git a/drivers/video/msm/mdss/mdss_dsi.c b/drivers/video/msm/mdss/mdss_dsi.c
+index 9f81d8878f2c..441ba862050a 100644
+--- a/drivers/video/msm/mdss/mdss_dsi.c
++++ b/drivers/video/msm/mdss/mdss_dsi.c
+@@ -1077,17 +1077,23 @@ static int mdss_dsi_debugfs_init(struct mdss_dsi_ctrl_pdata *ctrl_pdata)
+ 	int rc;
+ 	struct mdss_panel_data *pdata;
+ 	struct mdss_panel_info panel_info;
++	pr_err("!!!!!!! mdss_dsi_debugfs_init begin !!!!!!!\n");
+ 
+ 	if (!ctrl_pdata) {
+ 		pr_warn_once("%s: Invalid pdata!\n", __func__);
+ 		return -EINVAL;
+ 	}
++	pr_err("!!!!!!! mdss_dsi_debugfs_init step1 !!!!!!!\n");
+ 
+ 	pdata = &ctrl_pdata->panel_data;
+-	if (!pdata)
++	if (!pdata) {
++		pr_err("!!!!!!! mdss_dsi_debugfs_init pdata NULL !!!!!!!\n");
+ 		return -EINVAL;
++	}
+ 
++	pr_err("!!!!!!! mdss_dsi_debugfs_init step2 !!!!!!!\n");
+ 	panel_info = pdata->panel_info;
++	pr_err("!!!!!!! mdss_dsi_debugfs_init step3 !!!!!!!\n");
+ 	rc = mdss_dsi_debugfs_setup(pdata, panel_info.debugfs_info->root);
+ 	if (rc) {
+ 		pr_err("%s: Error in initilizing dsi ctrl debugfs\n",
+@@ -1096,6 +1102,7 @@ static int mdss_dsi_debugfs_init(struct mdss_dsi_ctrl_pdata *ctrl_pdata)
+ 	}
+ 
+ 	pr_debug("%s: Initialized mdss_dsi_debugfs_init\n", __func__);
++	pr_err("!!!!!!! mdss_dsi_debugfs_init end !!!!!!!\n");
+ 	return 0;
+ }
+ 
+@@ -2749,20 +2756,37 @@ static int mdss_dsi_event_handler(struct mdss_panel_data *pdata,
+ 		rc = mdss_dsi_panel_timing_switch(ctrl_pdata, arg);
+ 		break;
+ 	case MDSS_EVENT_FB_REGISTERED:
++		pr_err("!!!!!!! MDSS_EVENT_FB_REGISTERED begin !!!!!!!\n");
++		if (ctrl_pdata == NULL)
++		{
++			pr_err("!!!!!!! MDSS_EVENT_FB_REGISTERED ctrl_pdata NULL !!!!!!!\n");
++		}
++		else if (((struct fb_info *)arg) == NULL)
++		{
++			pr_err("!!!!!!! MDSS_EVENT_FB_REGISTERED arg NULL !!!!!!!\n");
++		}
++		else if (pdata == NULL)
++		{
++			pr_err("!!!!!!! MDSS_EVENT_FB_REGISTERED pdata NULL !!!!!!!\n");
++		}
+ 		mdss_dsi_debugfs_init(ctrl_pdata);
+ 
++		pr_err("!!!!!!! MDSS_EVENT_FB_REGISTERED step1 !!!!!!!\n");
+ 		fbi = (struct fb_info *)arg;
+ 		if (!fbi || !fbi->dev)
+ 			break;
+ 
++		pr_err("!!!!!!! MDSS_EVENT_FB_REGISTERED step2 !!!!!!!\n");
+ 		ctrl_pdata->kobj = &fbi->dev->kobj;
+ 		ctrl_pdata->fb_node = fbi->node;
+ 
++		pr_err("!!!!!!! MDSS_EVENT_FB_REGISTERED step3 !!!!!!!\n");
+ 		if (IS_ENABLED(CONFIG_MSM_DBA) &&
+ 			pdata->panel_info.is_dba_panel) {
+ 				queue_delayed_work(ctrl_pdata->workq,
+ 					&ctrl_pdata->dba_work, HZ);
+ 		}
++		pr_err("!!!!!!! MDSS_EVENT_FB_REGISTERED end !!!!!!!\n");
+ 		break;
+ 	default:
+ 		pr_debug("%s: unhandled event=%d\n", __func__, event);
+diff --git a/drivers/video/msm/mdss/mdss_fb.c b/drivers/video/msm/mdss/mdss_fb.c
+index 3fd1d2659b69..14abcbd7c3e9 100644
+--- a/drivers/video/msm/mdss/mdss_fb.c
++++ b/drivers/video/msm/mdss/mdss_fb.c
+@@ -140,6 +140,7 @@ static int __mdss_fb_display_thread(void *data);
+ static int mdss_fb_pan_idle(struct msm_fb_data_type *mfd);
+ static int mdss_fb_send_panel_event(struct msm_fb_data_type *mfd,
+ 					int event, void *arg);
++static int mdss_fb_pending_probe(struct msm_fb_data_type* mfd);
+ static void mdss_fb_set_mdp_sync_pt_threshold(struct msm_fb_data_type *mfd,
+ 		int type);
+ void mdss_fb_no_update_notify_timer_cb(unsigned long data)
+@@ -1478,7 +1479,7 @@ static int mdss_fb_init_panel_modes(struct msm_fb_data_type *mfd,
+ 			if (!IS_ERR_OR_NULL(spt))
+ 				modedb[i].xres += spt->xres;
+ 			else
+-				pr_debug("no matching split config for %s\n",
++				pr_info("no matching split config for %s\n",
+ 						modedb[i].name);
+ 
+ 			/*
+@@ -1490,7 +1491,7 @@ static int mdss_fb_init_panel_modes(struct msm_fb_data_type *mfd,
+ 		}
+ 
+ 		if (pt == pdata->current_timing) {
+-			pr_debug("found current mode: %s\n", pt->name);
++			pr_info("!!!!!!! found current mode: %s\n", pt->name);
+ 			fbi->mode = modedb + i;
+ 		}
+ 		i++;
+@@ -1517,6 +1518,8 @@ static int mdss_fb_probe(struct platform_device *pdev)
+ 	int rc;
+ 	const char *data;
+ 
++	pr_err("!!!!!!! mdss_fb_probe begin !!!!!!!\n");
++
+ 	if (fbi_list_index >= MAX_FBI_LIST)
+ 		return -ENOMEM;
+ 
+@@ -1561,6 +1564,7 @@ static int mdss_fb_probe(struct platform_device *pdev)
+ 	mfd->fb_imgType = MDP_RGBA_8888;
+ 	mfd->calib_mode_bl = 0;
+ 	mfd->unset_bl_level = U32_MAX;
++	mfd->registered = false;
+ 
+ 	mfd->pdev = pdev;
+ 
+@@ -1606,13 +1610,39 @@ static int mdss_fb_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, mfd);
+ 
++	pr_err("!!!!!!! mdss_fb_probe call mdss_fb_register !!!!!!!\n");
++
+ 	rc = mdss_fb_register(mfd);
++	pr_err("!!!!!!! mdss_fb_register return %d !!!!!!!\n", rc);
+ 	if (rc)
+ 		return rc;
+ 
+ 	mdss_fb_create_sysfs(mfd);
+ 	mdss_fb_send_panel_event(mfd, MDSS_EVENT_FB_REGISTERED, fbi);
+ 
++	if (!mfd->registered) {
++		pr_err("!!!!!!! mdss_fb_probe call mdss_fb_pending_probe !!!!!!!\n");
++		rc = mdss_fb_pending_probe(mfd);
++		pr_err("!!!!!!! mdss_fb_pending_probe return %d !!!!!!!\n", rc);
++	}
++
++
++	return rc;
++}
++
++static int mdss_fb_pending_probe(struct msm_fb_data_type *mfd)
++{
++	int rc;
++	struct platform_device *pdev = mfd->pdev;
++	struct mdss_panel_data *pdata;
++
++	pr_err("!!!!!!! mdss_fb_pending_probe begin !!!!!!!\n");
++
++	pdata = dev_get_platdata(&pdev->dev);
++	if (!pdata)
++		return -EPROBE_DEFER;
++
++	pr_err("!!!!!!! mdss_fb_pending_probe step1 !!!!!!!\n");
+ 	if (mfd->mdp.init_fnc) {
+ 		rc = mfd->mdp.init_fnc(mfd);
+ 		if (rc) {
+@@ -1620,13 +1650,17 @@ static int mdss_fb_probe(struct platform_device *pdev)
+ 			return rc;
+ 		}
+ 	}
++	pr_err("!!!!!!! mdss_fb_pending_probe step2 !!!!!!!\n");
+ 	mdss_fb_init_fps_info(mfd);
+ 
++	pr_err("!!!!!!! mdss_fb_pending_probe step3 !!!!!!!\n");
+ 	rc = pm_runtime_set_active(mfd->fbi->dev);
+ 	if (rc < 0)
+ 		pr_err("pm_runtime: fail to set active.\n");
++	pr_err("!!!!!!! mdss_fb_pending_probe step4 !!!!!!!\n");
+ 	pm_runtime_enable(mfd->fbi->dev);
+ 
++	pr_err("!!!!!!! mdss_fb_pending_probe step5 !!!!!!!\n");
+ 	/* android supports only one lcd-backlight/lcd for now */
+ 	if (!lcd_backlight_registered) {
+ 		backlight_led.brightness = mfd->panel_info->brightness_max;
+@@ -1637,8 +1671,13 @@ static int mdss_fb_probe(struct platform_device *pdev)
+ 			lcd_backlight_registered = 1;
+ 	}
+ 
+-	mdss_fb_init_panel_modes(mfd, pdata);
++	pr_err("!!!!!!! mdss_fb_pending_probe step8 !!!!!!!\n");
++	if (mdss_fb_init_panel_modes(mfd, pdata))
++	{
++		pr_err("!!!!!!! mdss_fb_init_panel_modes failed !!!!!!!\n");
++	}
+ 
++	pr_err("!!!!!!! mdss_fb_pending_probe step9 !!!!!!!\n");
+ 	mfd->mdp_sync_pt_data.fence_name = "mdp-fence";
+ 	if (mfd->mdp_sync_pt_data.timeline == NULL) {
+ 		char timeline_name[16];
+@@ -1654,8 +1693,10 @@ static int mdss_fb_probe(struct platform_device *pdev)
+ 			__mdss_fb_sync_buf_done_callback;
+ 	}
+ 
++	pr_err("!!!!!!! mdss_fb_pending_probe step10 !!!!!!!\n");
+ 	mdss_fb_set_mdp_sync_pt_threshold(mfd, mfd->panel.type);
+ 
++	pr_err("!!!!!!! mdss_fb_pending_probe step11 !!!!!!!\n");
+ 	if (mfd->mdp.splash_init_fnc)
+ 		mfd->mdp.splash_init_fnc(mfd);
+ 
+@@ -1668,14 +1709,18 @@ static int mdss_fb_probe(struct platform_device *pdev)
+ 	 * an idle event, user space tries to fall back to GPU composition which
+ 	 * can lead to increased load when there are new frames.
+ 	 */
++	pr_err("!!!!!!! mdss_fb_pending_probe step12 !!!!!!!\n");
+ 	if (mfd->mdp.input_event_handler &&
+ 		((mfd->panel_info->type == MIPI_CMD_PANEL) ||
+ 		(mfd->panel_info->type == MIPI_VIDEO_PANEL)))
+ 		if (mdss_fb_register_input_handler(mfd))
+ 			pr_err("failed to register input handler\n");
+ 
++	pr_err("!!!!!!! mdss_fb_pending_probe step13 !!!!!!!\n");
+ 	INIT_DELAYED_WORK(&mfd->idle_notify_work, __mdss_fb_idle_notify_work);
+ 
++	pr_err("!!!!!!! mdss_fb_pending_probe end !!!!!!!\n");
++	mfd->registered = true;
+ 	return rc;
+ }
+ 
+@@ -1711,6 +1756,11 @@ static int mdss_fb_remove(struct platform_device *pdev)
+ 	if (!mfd)
+ 		return -ENODEV;
+ 
++	if (!mfd->registered) {
++		pr_err("Attempted to remove unregistered mdss fb");
++		return -EINVAL;
++	}
++
+ 	mdss_fb_remove_sysfs(mfd);
+ 
+ 	pm_runtime_disable(mfd->fbi->dev);
+@@ -2415,7 +2465,14 @@ static int mdss_fb_blank(int blank_mode, struct fb_info *info)
+ 	int ret;
+ 	struct mdss_panel_data *pdata;
+ 	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)info->par;
+-	int panel_dead = mfd->panel_info->panel_dead;
++	int panel_dead;
++
++	if (mfd && !mfd->registered) {
++		pr_err("Attempted to blank unregistered mdss fb");
++		return -EINVAL;
++	}
++
++	panel_dead = mfd->panel_info->panel_dead;
+ 
+ 	ret = mdss_fb_pan_idle(mfd);
+ 	if (ret) {
+@@ -2752,6 +2809,11 @@ static int mdss_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
+ 	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)info->par;
+ 	int rc = -EINVAL;
+ 
++	if (mfd && !mfd->registered) {
++		pr_err("Attempted to mmap unregistered mdss fb");
++		return -EINVAL;
++	}
++
+ 	if (mfd->fb_mmap_type == MDP_FB_MMAP_ION_ALLOC) {
+ 		rc = mdss_fb_fbmem_ion_mmap(info, vma);
+ 	} else if (mfd->fb_mmap_type == MDP_FB_MMAP_PHYSICAL_ALLOC) {
+@@ -2775,7 +2837,9 @@ static struct fb_ops mdss_fb_ops = {
+ 	.owner = THIS_MODULE,
+ 	.fb_open = mdss_fb_open,
+ 	.fb_release = mdss_fb_release,
++#if 0
+ 	.fb_check_var = mdss_fb_check_var,	/* vinfo check */
++#endif
+ 	.fb_set_par = mdss_fb_set_par,	/* set the video mode */
+ 	.fb_blank = mdss_fb_blank,	/* blank display */
+ 	.fb_pan_display = mdss_fb_pan_display,	/* pan display */
+@@ -2784,6 +2848,9 @@ static struct fb_ops mdss_fb_ops = {
+ 	.fb_compat_ioctl_v2 = mdss_fb_compat_ioctl,
+ #endif
+ 	.fb_mmap = mdss_fb_mmap,
++	//.fb_fillrect = cfb_fillrect,
++	//.fb_copyarea = cfb_copyarea,
++	//.fb_imageblit = cfb_imageblit,
+ };
+ 
+ static int mdss_fb_alloc_fbmem_iommu(struct msm_fb_data_type *mfd, int dom)
+@@ -2879,6 +2946,8 @@ static int mdss_fb_register(struct msm_fb_data_type *mfd)
+ 	struct fb_var_screeninfo *var;
+ 	int *id;
+ 
++	pr_err("!!!!!!! mdss_fb_register begin !!!!!!!\n");
++
+ 	/*
+ 	 * fb info initialization
+ 	 */
+@@ -2896,7 +2965,7 @@ static int mdss_fb_register(struct msm_fb_data_type *mfd)
+ 	var->yoffset = 0,	/* resolution */
+ 	var->grayscale = 0,	/* No graylevels */
+ 	var->nonstd = 0,	/* standard pixel format */
+-	var->activate = FB_ACTIVATE_VBL,	/* activate it at vsync */
++	var->activate = FB_ACTIVATE_VBL | FB_ACTIVATE_FORCE,	/* activate it at vsync */
+ 	var->height = -1,	/* height of picture in mm */
+ 	var->width = -1,	/* width of picture in mm */
+ 	var->accel_flags = 0,	/* acceleration flags */
+@@ -3072,6 +3141,7 @@ static int mdss_fb_register(struct msm_fb_data_type *mfd)
+ 	if (ret)
+ 		pr_err("fb_alloc_cmap() failed!\n");
+ 
++	pr_err("!!!!!!! mdss_fb_register call register_framebuffer !!!!!!!\n");
+ 	if (register_framebuffer(fbi) < 0) {
+ 		fb_dealloc_cmap(&fbi->cmap);
+ 
+@@ -3095,6 +3165,16 @@ static int mdss_fb_open(struct fb_info *info, int user)
+ 	int result;
+ 	struct task_struct *task = current->group_leader;
+ 
++	if (mfd && !mfd->registered) {
++		pr_info("Attempted to open unregistered mdss fb\n");
++		result = mdss_fb_pending_probe(mfd);
++		if (result < 0) {
++			pr_err("Unable to finish registering mdss fb\n");
++			return -EINVAL;
++		}
++		pr_warn("Successfully registered pending mdss fb\n");
++	}
++
+ 	if (mfd->shutdown_pending) {
+ 		pr_err_once("Shutdown pending. Aborting operation. Request from pid:%d name=%s\n",
+ 			current->tgid, task->comm);
+@@ -3114,7 +3194,7 @@ static int mdss_fb_open(struct fb_info *info, int user)
+ 	result = pm_runtime_get_sync(info->dev);
+ 
+ 	if (result < 0) {
+-		pr_err("pm_runtime: fail to wake up\n");
++		pr_err("pm_runtime: fail to wake up, error = %d\n", result);
+ 		goto pm_error;
+ 	}
+ 
+@@ -3151,6 +3231,11 @@ static int mdss_fb_release_all(struct fb_info *info, bool release_all)
+ 	struct task_struct *task = current->group_leader;
+ 	struct fb_event event;
+ 
++	if (mfd && !mfd->registered) {
++		pr_info("Attempted to release unregistered mdss fb");
++		return -EINVAL;
++	}
++
+ 	if (!mfd->ref_cnt) {
+ 		pr_info("try to close unopened fb %d! from pid:%d name:%s\n",
+ 			mfd->index, current->tgid, task->comm);
+@@ -3573,6 +3658,11 @@ static int mdss_fb_pan_display_ex(struct fb_info *info,
+ 	if (!mfd || (!mfd->op_enable))
+ 		return -EPERM;
+ 
++	if (!mfd->registered) {
++		pr_err("Attempted to pan display unregistered mdss fb");
++		return -EINVAL;
++	}
++
+ 	if ((mdss_fb_is_power_off(mfd)) &&
+ 		!((mfd->dcm_state == DCM_ENTER) &&
+ 		(mfd->panel.type == MIPI_CMD_PANEL)))
+@@ -4302,6 +4392,11 @@ static int mdss_fb_set_par(struct fb_info *info)
+ 	int old_imgType, old_format;
+ 	int ret = 0;
+ 
++	if (mfd && !mfd->registered) {
++		pr_info("Attempted to set par for unregistered mdss fb");
++		return -EINVAL;
++	}
++
+ 	ret = mdss_fb_pan_idle(mfd);
+ 	if (ret) {
+ 		pr_err("mdss_fb_pan_idle failed. rc=%d\n", ret);
+diff --git a/drivers/video/msm/mdss/mdss_fb.h b/drivers/video/msm/mdss/mdss_fb.h
+index 5a9f878d0856..886067b6ed15 100644
+--- a/drivers/video/msm/mdss/mdss_fb.h
++++ b/drivers/video/msm/mdss/mdss_fb.h
+@@ -289,6 +289,7 @@ struct msm_fb_data_type {
+ 	u32 fb_imgType;
+ 	int panel_reconfig;
+ 	u32 panel_orientation;
++	bool registered;
+ 
+ 	u32 dst_format;
+ 	int panel_power_state;

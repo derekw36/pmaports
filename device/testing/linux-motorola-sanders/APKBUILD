@@ -33,6 +33,7 @@ source="
 	$pkgname-$_commit.tar.gz::https://github.com/PixelExperience-Devices/$_repository/archive/$_commit.tar.gz
 	$_config
 	gcc10-extern_YYLOC_global_declaration.patch
+	fix-mdss-fb-init.patch
 	fix-xorg-mdss-update-fb-info.patch
 "
 builddir="$srcdir/$_repository-$_commit"
@@ -62,7 +63,8 @@ package() {
 
 sha512sums="
 b861df303c266dfa817b0d1b2a62635945a204323a82a035fcd049a1278a25c13606e9b6728de522a20fe9a806c5dd86218180a4a1c3595ec26d2f6673634171  linux-motorola-sanders-eleven.tar.gz
-08fde09cbf8025e62ee62b141ff19469502869b81125214a485658e6a37edc568144ff39a4b67c91dc69f3a75eecd752f6c35e7d512fc6a5179addb02677e47e  config-motorola-sanders.aarch64
+addd877eb0e2b360c6fb26ef6064402e163b9141ec8625b2cd8436c104f4fcea69ffa673396c7d42a331340dd0eccde0d1bd0b10ff7f481f70020897854b6476  config-motorola-sanders.aarch64
 2b48f1bf0e3f70703d2cdafc47d5e615cc7c56c70bec56b2e3297d3fa4a7a1321d649a8679614553dde8fe52ff1051dae38d5990e3744c9ca986d92187dcdbeb  gcc10-extern_YYLOC_global_declaration.patch
+71922df04333dc64dfb8600d35a1662c2a7e36d0d94cc28f6810d0ed874a9e36b1d02dca03916e11e278f410718de3e862431c83759a5e3499247e80b5e163e7  fix-mdss-fb-init.patch
 a277af28a718f5caf94257005393aa92d62c96110a8ec6368ff62f2e0d871b69c56c4ce00174db637204d53fa63ad3a79b8d6141713dca0878e1f06fe0379caa  fix-xorg-mdss-update-fb-info.patch
 "
